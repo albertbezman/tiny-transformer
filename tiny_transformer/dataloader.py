@@ -23,10 +23,15 @@ class TinyStoriesDataset(Dataset):
             "label": torch.tensor(self.data["label"][idx], dtype=torch.long),
         }
 
+    def get_max_seq_length(self):
+        return max(len(item) for item in self.data["input"])
+
 
 # %%
 # Test load the dataset
 train_dataset = TinyStoriesDataset(f"{DATA_DIR}/data_tokenized.parquet")
+
+MAX_SEQ_LENGTH = train_dataset.get_max_seq_length()
 
 
 # %%

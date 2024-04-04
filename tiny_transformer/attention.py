@@ -16,7 +16,7 @@ def create_look_ahead_mask(size):
     :param size: the size of the mask (the sequence length)
     :return: a 2D mask with shape (size, size) with the upper triangle filled with ones
     """
-    mask = torch.tensor(np.triu(np.ones((size, size)), k=1))
+    mask = torch.triu(torch.ones((size, size)), diagonal=1)
     return mask
 
 
@@ -33,8 +33,8 @@ def scaled_dot_product_attention(queries, keys, values, mask):
 
     # Dot product of queries with keys (transposed), scaled by size of the key vectors
     # This represents the score matrix - which is a way to measure the association of keys and queries
-    attention_scores = torch.tensor(
-        np.matmul(queries, keys.transpose()) / np.sqrt(keys.shape[-1])
+    attention_scores = torch.matmul(queries, keys.transpose(-2, -1)) / torch.sqrt(
+        torch.tensor(keys.shape[-1]).float()
     )
 
     # Apply the mask to the scores (if any)
@@ -42,11 +42,11 @@ def scaled_dot_product_attention(queries, keys, values, mask):
         attention_scores += mask * -1e9  # Use a large negative number to mask
 
     # Calculate the attention weights using softmax
-    # This represents
     attention_weights = softmax(attention_scores, dim=-1)
 
     # Multiply the attention weights with the value vectors to get the output
-    output = np.matmul(attention_weights, values)
+    # Assuming values is a torch tensor
+    output = torch.matmul(attention_weights, values)
 
     return output, attention_weights
 
@@ -67,28 +67,26 @@ def scaled_dot_product_attention(queries, keys, values, mask):
 
 
 # %%
-def multi_head_attention(queries, keys, values, num_heads, embedding_size):
+def multi_head_attention(x, num_heads, wq, wk, wv, wo, return_attention_weights=False):
     # Split the embedding dimension across the heads
-    head_dim = queries.shape[-1] // num_heads
+    queries = keys = values = x
+    seq_length = x.shape[1]
     all_outputs = []
     all_attention_weights = []
 
     for h in range(num_heads):
-        # Assuming W_Q, W_K, W_V are weight matrices for each head
-        # They are initialized and learned during training
-        # For this example, they are just placeholders to show the process
-        W_Q_h = np.random.rand(embedding_size, head_dim)
-        W_K_h = np.random.rand(embedding_size, head_dim)
-        W_V_h = np.random.rand(embedding_size, head_dim)
+        W_Q_h = wq
+        W_K_h = wk
+        W_V_h = wv
 
         # Linearly project the queries, keys, and values for head 'h'
-        queries_h = np.dot(queries, W_Q_h)
-        keys_h = np.dot(keys, W_K_h)
-        values_h = np.dot(values, W_V_h)
+        queries_h = torch.matmul(queries, W_Q_h)
+        keys_h = torch.matmul(keys, W_K_h)
+        values_h = torch.matmul(values, W_V_h)
 
         # Calculate the attention output for head 'h'
         output_h, attention_weights_h = scaled_dot_product_attention(
-            queries_h, keys_h, values_h, mask=create_look_ahead_mask(queries_h.shape[1])
+            queries_h, keys_h, values_h, mask=create_look_ahead_mask(seq_length)
         )
 
         # Collect the results from each head
@@ -96,13 +94,17 @@ def multi_head_attention(queries, keys, values, num_heads, embedding_size):
         all_attention_weights.append(attention_weights_h)
 
     # Concatenate the outputs from each head along the last dimension
-    concatenated_outputs = np.concatenate(all_outputs, axis=-1)
+    concatenated_outputs = torch.cat(all_outputs, dim=-1)
 
     # Apply a final linear projection if needed
-    W_O = np.random.rand(num_heads * head_dim, embedding_size)
-    output = np.dot(concatenated_outputs, W_O)
+    W_O = wo
+    output = torch.matmul(concatenated_outputs, W_O)
 
-    return output, all_attention_weights
+    if return_attention_weights:
+        return output, all_attention_weights
+    else:
+        return output
+
 
 
 # Example usage
