@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.nn.functional import softmax
+from config import NUM_DECODER_LAYERS
 from attention import (
     create_look_ahead_mask,
     scaled_dot_product_attention,
@@ -66,4 +67,4 @@ class TinyTransformer(nn.Module):
 
 # %%
 # test
-model = TinyTransformer(ndecoder_layers=1)
+model = TinyTransformer(ndecoder_layers=NUM_DECODER_LAYERS)
