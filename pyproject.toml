@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "tiny-transformer"
+version = "0.1.0"
+description = ""
+authors = ["Albert Bezman <albert@bezman.dev>"]
+readme = "README.md"
+packages = [{include = "tiny_transformer"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^2.2.2"
+pandas = "^2.2.1"
+datasets = "^2.18.0"
+numpy = "^1.26.4"
+tokenizers = "^0.15.2"
+tqdm = "^4.66.2"
+tiktoken = "^0.6.0"
+
+[tool.poetry.group.dev-dependencies.dependencies]
+pytest = "^8.1.1"
+ipykernel = "^6.29.4"
+black = "^24.3.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
