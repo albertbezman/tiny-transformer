@@ -7,7 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # Config
-from config import D_MODEL, NUM_HEADS, LEARNING_RATE, NUM_EPOCHS, PROJ_ROOT, BATCH_SIZE
+from config import D_MODEL, NUM_HEADS, LEARNING_RATE, NUM_EPOCHS, PROJ_ROOT, BATCH_SIZE, NUM_DECODER_LAYERS
 
 # %%
 # Dataset
@@ -27,6 +27,7 @@ model = TinyTransformerDecoder(
     nhead=NUM_HEADS,
     vocab_size=VOCAB_SIZE,
     max_seq_length=MAX_SEQ_LENGTH,
+    ndecoder_layers=NUM_DECODER_LAYERS,
     device=device,
 )
 
