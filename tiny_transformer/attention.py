@@ -20,7 +20,7 @@ def create_look_ahead_mask(size):
     return mask
 
 
-def scaled_dot_product_attention(queries, keys, values, mask):
+def scaled_dot_product_attention(queries, keys, values,  padding_mask, mask):
     """
     Calculate the attention weights and output
     :param queries: a matrix of query vectors
@@ -31,11 +31,20 @@ def scaled_dot_product_attention(queries, keys, values, mask):
     """
     # pdb.set_trace()  # Set breakpoint at the first line of the function
 
+
     # Dot product of queries with keys (transposed), scaled by size of the key vectors
     # This represents the score matrix - which is a way to measure the association of keys and queries
     attention_scores = torch.matmul(queries, keys.transpose(-2, -1)) / torch.sqrt(
         torch.tensor(keys.shape[-1], device=queries.device).float()
     )
+
+    # Add an extra dimension to the padding_mask
+    padding_mask_expanded = padding_mask.unsqueeze(1)
+    padding_mask_expanded = padding_mask_expanded.expand_as(attention_scores)
+
+
+    # Apply the padding_mask to the attention_scores
+    attention_scores.masked_fill_(padding_mask_expanded, -1e9)
 
     # Apply the mask to the scores (if any)
     if mask is not None:
@@ -68,7 +77,9 @@ def scaled_dot_product_attention(queries, keys, values, mask):
 
 
 # %%
-def multi_head_attention(x, num_heads, wq, wk, wv, wo, return_attention_weights=False):
+def multi_head_attention(
+    x, num_heads, wq, wk, wv, wo, padding_mask, return_attention_weights=False
+):
     # Split the embedding dimension across the heads
     queries = keys = values = x
     seq_length = x.shape[1]
@@ -87,7 +98,7 @@ def multi_head_attention(x, num_heads, wq, wk, wv, wo, return_attention_weights=
 
         # Calculate the attention output for head 'h'
         output_h, attention_weights_h = scaled_dot_product_attention(
-            queries_h, keys_h, values_h, mask=create_look_ahead_mask(seq_length)
+            queries_h, keys_h, values_h, padding_mask, mask=create_look_ahead_mask(seq_length)
         )
 
         # Collect the results from each head
@@ -105,7 +116,6 @@ def multi_head_attention(x, num_heads, wq, wk, wv, wo, return_attention_weights=
         return output, all_attention_weights
     else:
         return output
-
 
 
 # Example usage

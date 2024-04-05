@@ -29,12 +29,12 @@ class DecoderBlock(nn.Module):
         self.W_V = nn.Parameter(torch.randn(d_model, d_model // nhead))
         self.W_O = nn.Parameter(torch.randn(d_model, d_model))
 
-    def forward(self, x):
+    def forward(self, x, padding_mask):
         # Save the pre-attention value of x
         x_p = x.clone()
 
         x = multi_head_attention(
-            x, self.nhead, self.W_Q, self.W_K, self.W_V, self.W_O
+            x, self.nhead, self.W_Q, self.W_K, self.W_V, self.W_O, padding_mask
         )
 
         # Add & Norm
@@ -73,29 +73,33 @@ class TinyTransformerDecoder(nn.Module):
         self.nhead = nhead
         self.device = device
         self.embeddings = nn.Embedding(self.vocab_size, self.d_model)
-        self.decoder_blocks = nn.ModuleList([
-            DecoderBlock(d_model, nhead, dim_feedforward, dropout)
-            for _ in range(ndecoder_layers)
-        ])
+        self.decoder_blocks = nn.ModuleList(
+            [
+                DecoderBlock(d_model, nhead, dim_feedforward, dropout)
+                for _ in range(ndecoder_layers)
+            ]
+        )
         self.linear = nn.Linear(d_model, vocab_size)
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
+        # Create a padding mask for the input x
+        padding_mask = (x == 0)
+
         x = self.embeddings(x)
         seq_len = x.size(1)
         pos_enc = positional_encoding(seq_len, self.d_model).to(self.device)
         x = x + pos_enc
 
         for decoder_block in self.decoder_blocks:
-            x = decoder_block(x)
+            x = decoder_block(x, padding_mask)
 
         # Linear layer
         x = self.linear(x)
 
         # Softmax layer
-        x = self.softmax(x)
+        # x = self.softmax(x)
         return x
-
 
 
 # Embedding layer

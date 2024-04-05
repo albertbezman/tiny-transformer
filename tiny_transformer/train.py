@@ -1,6 +1,15 @@
 # %%
 # Config
-from config import D_MODEL, NUM_HEADS, LEARNING_RATE, NUM_EPOCHS, PROJ_ROOT, BATCH_SIZE, NUM_DECODER_LAYERS
+from config import (
+    D_MODEL,
+    NUM_HEADS,
+    LEARNING_RATE,
+    NUM_EPOCHS,
+    PROJ_ROOT,
+    BATCH_SIZE,
+    NUM_DECODER_LAYERS,
+)
+
 # Imports
 from transformer import TinyTransformerDecoder
 from torch import nn, optim
@@ -37,7 +46,9 @@ model.to(device)
 loss_fn = torch.nn.CrossEntropyLoss()  # Assuming a classification problem
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-train_dataloader = make_dataloader(f"{DATA_DIR}/data_tokenized.parquet", batch_size=BATCH_SIZE)
+train_dataloader = make_dataloader(
+    f"{DATA_DIR}/data_tokenized.parquet", batch_size=BATCH_SIZE
+)
 
 losses = []
 
@@ -52,14 +63,25 @@ for epoch in range(NUM_EPOCHS):
     for batch in tqdm(train_dataloader, desc=f"Epoch {epoch+1}"):
         inputs = batch["input"]
         targets = batch["label"]
-        assert(inputs.shape == targets.shape)
+        assert inputs.shape == targets.shape
         inputs, targets = inputs.to(device), targets.to(device)
 
         # Forward pass
         outputs = model(inputs)
 
         # Compute loss
-        loss = loss_fn(outputs.view(-1, VOCAB_SIZE), targets.view(-1))
+        # feed logits, feed one-hot encoded targets
+        # [outputs: batch size, seq length, vocab size]
+        # [targets: batch size, seq length, vocab size]
+
+        # One-hot encode the targets
+        targets_one_hot = torch.zeros(targets.size(0), targets.size(1), VOCAB_SIZE).to(
+            device
+        )
+        targets_one_hot.scatter_(2, targets.unsqueeze(2), 1)
+
+        # Now pass the one-hot encoded targets to the loss function
+        loss = loss_fn(outputs, targets_one_hot)
 
         # Backward pass and optimize
         optimizer.zero_grad()
@@ -84,5 +106,5 @@ plt.title("Training Loss Over Time")
 plt.show()
 
 
-#%% Save the model
+# %% Save the model
 torch.save(model.state_dict(), f"{PROJ_ROOT}/model_checkpoints/model_{NUM_EPOCHS}.pth")

@@ -1,5 +1,6 @@
 # %%
 # Imports
+import os
 from datasets import load_dataset
 import tiktoken
 from tqdm import tqdm
@@ -67,6 +68,8 @@ VOCAB_SIZE = tokenizer.n_vocab
 # %%
 # Save the tokenized sequences to a parquet file
 # Convert the list of dictionaries to a DataFrame
+os.mkdir(DATA_DIR)
+
 df = pd.DataFrame(tokenized_sequences)
 
 # Save the DataFrame to a parquet file
