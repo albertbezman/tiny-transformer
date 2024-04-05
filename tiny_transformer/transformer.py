@@ -6,24 +6,24 @@ import numpy as np
 from torch.nn.functional import softmax
 from config import NUM_DECODER_LAYERS, VOCAB_SIZE, NUM_HEADS, D_MODEL, MAX_SEQ_LENGTH
 from attention import multi_head_attention
-from positional_encoding import create_positional_encodings
+from positional_encoding import positional_encoding
 
 
 # %%
 # Transformer class
-class TinyTransformer(nn.Module):
+class TinyTransformerDecoder(nn.Module):
     def __init__(
         self,
         vocab_size,
         d_model,
         nhead,
         # ndecoder_layers,
-        # dim_feedforward,
-        # dropout,
         # activation,
         max_seq_length,
+        dropout=0.1,
+        dim_feedforward=2048,
     ):
-        super(TinyTransformer, self).__init__()
+        super(TinyTransformerDecoder, self).__init__()
         # Params
         self.vocab_size = vocab_size
         self.d_model = d_model
@@ -35,8 +35,8 @@ class TinyTransformer(nn.Module):
         # self.activation = activation
         # self.max_seq_length = max_seq_length
         self.embeddings = nn.Embedding(self.vocab_size, self.d_model)
-        self.positional_encodings = create_positional_encodings
-        self.multi_head_attention = multi_head_attention
+        self.layer_norm = nn.LayerNorm(self.d_model)
+        self.dropout = nn.Dropout(dropout)
 
         # Define the weight matrices as parameters
         self.W_Q = nn.Parameter(torch.randn(self.d_model, self.head_dim))
@@ -54,17 +54,40 @@ class TinyTransformer(nn.Module):
         # )
         # self.linear = nn.Linear(d_model, vocab_size)
         # self.softmax = nn.Softmax(dim=-1)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, dim_feedforward),
+            nn.ReLU(),
+            self.dropout,
+            nn.Linear(dim_feedforward, d_model),
+        )
 
     def forward(self, x):
         x = self.embeddings(x)
-        # x = self.positional_encodings(x, self.max_seq_length, self.d_model)
-        x = self.multi_head_attention(
+        seq_len = x.size(1)
+        pos_enc = positional_encoding(seq_len, self.d_model)
+        x = x + pos_enc
+
+        # Save the pre-attention value of x
+        x_p = x.clone()
+
+        x = multi_head_attention(
             x, self.nhead, self.W_Q, self.W_K, self.W_V, self.W_O
         )
-        # for n in range(self.ndecoder_layers):
-        #     x = self.decoder_blocks(x)
-        # x = self.linear(x)
-        # x = self.softmax(x)
+
+        # Add & Norm
+        x = self.layer_norm(x + x_p)
+        x = self.dropout(x)
+
+        # Save the pre-FFN value of x
+        pre_ffn_x = x
+
+        # Feed-forward network
+        x = self.ffn(x)
+
+        # Add & Norm after FFN
+        x = self.layer_norm(x + pre_ffn_x)
+        x = self.dropout(x)
+
         print(x)
         return x
 
@@ -83,7 +106,7 @@ class TinyTransformer(nn.Module):
 MAX_SEQ_LENGTH = 278
 VOCAB_SIZE = 100279
 
-model = TinyTransformer(
+model = TinyTransformerDecoder(
     d_model=D_MODEL,
     nhead=NUM_HEADS,
     vocab_size=VOCAB_SIZE,
