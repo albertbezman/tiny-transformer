@@ -4,7 +4,7 @@ from datasets import load_dataset
 import tiktoken
 from tqdm import tqdm
 import pandas as pd
-from config import DATA_DIR, VOCAB_SIZE
+from config import DATA_DIR, VOCAB_SIZE, DATASET_SIZE
 
 # %%
 # Load the dataset
@@ -21,7 +21,7 @@ def add_bos_eos_to_sequence(dataset, n=100):
 
 
 # labelled_dataset = add_bos_eos_to_sequence(dataset, n=len(dataset))
-labelled_dataset = add_bos_eos_to_sequence(dataset, n=100)
+labelled_dataset = add_bos_eos_to_sequence(dataset, n=DATASET_SIZE)
 
 # %%
 # Tokenize

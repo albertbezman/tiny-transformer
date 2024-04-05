@@ -7,7 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # Config
-from config import D_MODEL, NUM_HEADS, LEARNING_RATE, NUM_EPOCHS, PROJ_ROOT
+from config import D_MODEL, NUM_HEADS, LEARNING_RATE, NUM_EPOCHS, PROJ_ROOT, BATCH_SIZE
 
 # %%
 # Dataset
@@ -36,7 +36,7 @@ model.to(device)
 loss_fn = torch.nn.CrossEntropyLoss()  # Assuming a classification problem
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-train_dataloader = make_dataloader(f"{DATA_DIR}/data_tokenized.parquet", batch_size=10)
+train_dataloader = make_dataloader(f"{DATA_DIR}/data_tokenized.parquet", batch_size=BATCH_SIZE)
 
 losses = []
 
