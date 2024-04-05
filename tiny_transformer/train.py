@@ -1,4 +1,6 @@
 # %%
+# Config
+from config import D_MODEL, NUM_HEADS, LEARNING_RATE, NUM_EPOCHS, PROJ_ROOT, BATCH_SIZE, NUM_DECODER_LAYERS
 # Imports
 from transformer import TinyTransformerDecoder
 from torch import nn, optim
@@ -6,18 +8,16 @@ from dataloader import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-# Config
-from config import D_MODEL, NUM_HEADS, LEARNING_RATE, NUM_EPOCHS, PROJ_ROOT, BATCH_SIZE, NUM_DECODER_LAYERS
 
 # %%
 # Dataset
 # Dataloader
+
 # Transformer
 
 # %%
 # Train
-MAX_SEQ_LENGTH = 278
-VOCAB_SIZE = 100279
+VOCAB_SIZE = 50283
 
 # Move model to GPU if available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,6 +52,7 @@ for epoch in range(NUM_EPOCHS):
     for batch in tqdm(train_dataloader, desc=f"Epoch {epoch+1}"):
         inputs = batch["input"]
         targets = batch["label"]
+        assert(inputs.shape == targets.shape)
         inputs, targets = inputs.to(device), targets.to(device)
 
         # Forward pass

@@ -14,7 +14,7 @@ dataset = load_dataset("roneneldan/TinyStories", split="train")
 # %%
 def add_bos_eos_to_sequence(dataset, n=100):
     dataset_processed = [
-        {"input": "<|bos|> " + sequence, "label": sequence + "<|eos|>"}
+        {"input": "<|bos|>" + sequence, "label": sequence + "<|eos|>"}
         for i, sequence in enumerate(dataset["text"][:n])
     ]
     return dataset_processed
@@ -26,19 +26,23 @@ labelled_dataset = add_bos_eos_to_sequence(dataset, n=DATASET_SIZE)
 # %%
 # Tokenize
 
+tokenizer_name = "p50k_base"
+
 # Initialize the tokenizer
-cl100k_base = tiktoken.get_encoding("cl100k_base")
+base = tiktoken.get_encoding(tokenizer_name)
+
+max_token = base.max_token_value
 
 tokenizer = tiktoken.Encoding(
     # If you're changing the set of special tokens, make sure to use a different name
     # It should be clear from the name what behaviour to expect.
-    name="cl100k_tt",
-    pat_str=cl100k_base._pat_str,
-    mergeable_ranks=cl100k_base._mergeable_ranks,
+    name="p50k_tt",
+    pat_str=base._pat_str,
+    mergeable_ranks=base._mergeable_ranks,
     special_tokens={
-        **cl100k_base._special_tokens,
-        "<|bos|>": 100277,
-        "<|eos|>": 100278,
+        **base._special_tokens,
+        "<|bos|>": max_token + 1,
+        "<|eos|>": max_token + 2,
     },
 )
 
@@ -67,3 +71,5 @@ df = pd.DataFrame(tokenized_sequences)
 
 # Save the DataFrame to a parquet file
 df.to_parquet(f"{DATA_DIR}/data_tokenized.parquet", engine="pyarrow", index=False)
+
+# %%
