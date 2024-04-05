@@ -2,4 +2,5 @@
 .vscode/
 *.swp
 data/*
+model_checkpoints/*
 *__pycache__/

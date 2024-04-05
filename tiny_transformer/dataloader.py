@@ -16,7 +16,7 @@ class TinyStoriesDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
-
+    
     def __getitem__(self, idx):
         return {
             "input": torch.tensor(self.data["input"][idx], dtype=torch.long),

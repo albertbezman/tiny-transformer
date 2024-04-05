@@ -34,11 +34,12 @@ def scaled_dot_product_attention(queries, keys, values, mask):
     # Dot product of queries with keys (transposed), scaled by size of the key vectors
     # This represents the score matrix - which is a way to measure the association of keys and queries
     attention_scores = torch.matmul(queries, keys.transpose(-2, -1)) / torch.sqrt(
-        torch.tensor(keys.shape[-1]).float()
+        torch.tensor(keys.shape[-1], device=queries.device).float()
     )
 
     # Apply the mask to the scores (if any)
     if mask is not None:
+        mask = mask.to(queries.device)
         attention_scores += mask * -1e9  # Use a large negative number to mask
 
     # Calculate the attention weights using softmax

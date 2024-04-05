@@ -19,6 +19,7 @@ class TinyTransformerDecoder(nn.Module):
         nhead,
         # ndecoder_layers,
         # activation,
+        device,
         max_seq_length,
         dropout=0.1,
         dim_feedforward=2048,
@@ -29,6 +30,7 @@ class TinyTransformerDecoder(nn.Module):
         self.d_model = d_model
         self.nhead = nhead
         self.head_dim = d_model // nhead
+        self.device = device
         # self.ndecoder_layers = ndecoder_layers
         # self.dim_feedforward = dim_feedforward
         # self.dropout = dropout
@@ -37,6 +39,8 @@ class TinyTransformerDecoder(nn.Module):
         self.embeddings = nn.Embedding(self.vocab_size, self.d_model)
         self.layer_norm = nn.LayerNorm(self.d_model)
         self.dropout = nn.Dropout(dropout)
+        self.linear = nn.Linear(d_model, vocab_size)
+        self.softmax = nn.LogSoftmax(dim=-1)
 
         # Define the weight matrices as parameters
         self.W_Q = nn.Parameter(torch.randn(self.d_model, self.head_dim))
@@ -64,7 +68,7 @@ class TinyTransformerDecoder(nn.Module):
     def forward(self, x):
         x = self.embeddings(x)
         seq_len = x.size(1)
-        pos_enc = positional_encoding(seq_len, self.d_model)
+        pos_enc = positional_encoding(seq_len, self.d_model).to(self.device)
         x = x + pos_enc
 
         # Save the pre-attention value of x
@@ -88,7 +92,11 @@ class TinyTransformerDecoder(nn.Module):
         x = self.layer_norm(x + pre_ffn_x)
         x = self.dropout(x)
 
-        print(x)
+        # Linear layer
+        x = self.linear(x)
+
+        # Softmax layer
+        x = self.softmax(x)
         return x
 
 
@@ -100,22 +108,3 @@ class TinyTransformerDecoder(nn.Module):
 # Add and norm
 # Linear
 # Softmax
-
-# %%
-# test
-MAX_SEQ_LENGTH = 278
-VOCAB_SIZE = 100279
-
-model = TinyTransformerDecoder(
-    d_model=D_MODEL,
-    nhead=NUM_HEADS,
-    vocab_size=VOCAB_SIZE,
-    max_seq_length=MAX_SEQ_LENGTH,
-)
-
-from dataloader import *
-
-train_dataloader = make_dataloader(f"{DATA_DIR}/data_tokenized.parquet", batch_size=10)
-
-for i, s in enumerate(train_dataloader):
-    output = model(s["input"])

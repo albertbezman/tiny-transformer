@@ -6,17 +6,19 @@ from tqdm import tqdm
 import pandas as pd
 from config import DATA_DIR, VOCAB_SIZE
 
-#%%
+# %%
 # Load the dataset
 dataset = load_dataset("roneneldan/TinyStories", split="train")
+
 
 # %%
 def add_bos_eos_to_sequence(dataset, n=100):
     dataset_processed = [
-        {"input": "<|bos|> " + sequence, "label": sequence + " <|eos|>"}
+        {"input": "<|bos|> " + sequence, "label": sequence + "<|eos|>"}
         for i, sequence in enumerate(dataset["text"][:n])
     ]
     return dataset_processed
+
 
 # labelled_dataset = add_bos_eos_to_sequence(dataset, n=len(dataset))
 labelled_dataset = add_bos_eos_to_sequence(dataset, n=100)
@@ -37,15 +39,15 @@ tokenizer = tiktoken.Encoding(
         **cl100k_base._special_tokens,
         "<|bos|>": 100277,
         "<|eos|>": 100278,
-    }
+    },
 )
 
 # Tokenize the corpus sequences
 tokenized_sequences = [
     {
-        'input': tokenizer.encode(row['input'], allowed_special={'<|bos|>', '<|eos|>'}),
-        'label': tokenizer.encode(row['label'], allowed_special={'<|bos|>', '<|eos|>'})
-    } 
+        "input": tokenizer.encode(row["input"], allowed_special={"<|bos|>", "<|eos|>"}),
+        "label": tokenizer.encode(row["label"], allowed_special={"<|bos|>", "<|eos|>"}),
+    }
     for row in tqdm(labelled_dataset)
 ]
 
@@ -64,6 +66,4 @@ VOCAB_SIZE = tokenizer.n_vocab
 df = pd.DataFrame(tokenized_sequences)
 
 # Save the DataFrame to a parquet file
-df.to_parquet(f'{DATA_DIR}/data_tokenized.parquet', engine='pyarrow', index=False)
-
-# %%
+df.to_parquet(f"{DATA_DIR}/data_tokenized.parquet", engine="pyarrow", index=False)
